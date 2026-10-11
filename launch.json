@@ -1,0 +1,24 @@
+{
+  "kind": "custom_token",
+  "token": {
+    "contract": "AmbidexToken",
+    "name": "AMBIDEX",
+    "symbol": "AMBI",
+    "decimals": 18,
+    "constructorArgs": [],
+    "totalSupply": "1000000000000000000000000000"
+  },
+  "contracts": [],
+  "pool": {
+    "pairedCurrency": "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+    "fee": 12500,
+    "tickSpacing": 60,
+    "initialPrice": "79228162514264337593543950336"
+  },
+  "economics": {
+    "poolBps": 8800,
+    "initialMarketCapWei": "2500000000000000000000",
+    "remainderTo": "0xfec44fefbc7b83ce9be3a36d647d36f45cff59e2"
+  },
+  "notes": "AmbidexToken (src/AmbidexToken.sol) is a plain, fixed-supply ERC-20 built on OpenZeppelin Contracts v5.4.0 ERC20. name() returns AMBIDEX, symbol() returns AMBI, decimals() returns 18. The constructor takes no arguments and mints the whole supply of 1,000,000,000 AMBI (1000000000000000000000000000 minor units) once to msg.sender, which on this launch is the ProjectFactory; there is no other mint path, so the supply can never grow. The token has no owner, admin or privileged role, and no pause, blacklist, freeze, seize, burnFrom, upgrade or proxy mechanism. Every transfer moves exactly the amount requested, with no tax, burn or reflection, so the token needs no exemptions for the factory, the PoolManager or the distributor and takes none of the $factory, $poolManager or $launchNumber arguments. The launch flows (factory to distributor, distributor claims, the single-sided pool seed and swaps in both directions) move exactly what they state. There are no application contracts: the accepted tree contains only the token. The pool pairs AMBI with IMD at 0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7 on Ethereum at the launch policy's 1.25% fee and tick spacing 60; initialPrice is provenance only, the deployer derives the opening price from economics.initialMarketCapWei and totalSupply."
+}
