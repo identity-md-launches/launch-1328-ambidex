@@ -70,15 +70,16 @@ One scale of six sizes:
 
 | Token | Size | Used for |
 | --- | --- | --- |
-| `--text-xs` | 13px | captions: `.card__footnote`, `.field__hint`, `.stat__detail`, `.address-row__note` |
+| `--text-xs` | 13px | captions: `.field__hint`, `.stat__detail`, `.address-row__note` |
 | `--text-sm` | 14px | UI labels: nav, `.field label`, `.stat__label`, `dt`, small buttons, address values, footer |
 | `--text-base` | 16px | body, inputs (16px keeps iOS from zooming), buttons, brand name, `h3.send-form__title` |
 | `--text-lg` | 20px | `.card__title` (h2/h3 inside cards), `.stat__value`, `.hero__lede` |
 | `--text-xl` | 28px | `.section-title` (h2) |
 | `--text-display` | `clamp(2.125rem, 1.5rem + 2.6vw, 2.875rem)` (34–46px) | `h1.hero__title` only |
 
-Weights: 400 body, 500 buttons/labels/nav, 600 card titles, 650 section titles and stat values, 700 h1.
-Nothing below 400. Line heights: `--leading-tight` 1.1 (h1, section titles), `--leading-snug` 1.3
+Three weights: 400 body and prose; 600 UI text (buttons, nav links, field labels, card titles, the
+inline link button, stat placeholders, address-row labels); 700 display (h1, section titles, stat values,
+the brand wordmark). Nothing below 400 and nothing between these steps. Line heights: `--leading-tight` 1.1 (h1, section titles), `--leading-snug` 1.3
 (card titles, lede, stat values), `--leading-body` 1.55 (everything else). Letter-spacing −0.02em on h1,
 −0.01em on section titles, none elsewhere.
 
@@ -111,12 +112,14 @@ Primitives in `web/src/styles.css`:
 - `.kv` / `.kv__row`: definition rows with a `minmax(7rem, 9rem)` label column; `.kv__row--wide` stacks
   label over a long value (hashes).
 
-Breakpoints come from content: 40rem (lookup form) and 56rem (two-column hero and sections). Logical
+Breakpoints come from content: 23rem and below (header wordmark hidden, nav link padding 8px), 40rem
+(lookup form) and 56rem (two-column hero and sections). Logical
 properties (`padding-inline`, `inset-block-start`, `margin-inline-end`) are used throughout. The header is
 `position: sticky` at `--header-height` 3.5rem; anchored sections use `scroll-margin-top` to clear it.
 
-Observed in the browser: no horizontal overflow at 320, 390, 820, 1280 or 1536px; at 390×844 the h1,
-lede and the action card's main button are inside the first screen. Native 200% zoom was not tested.
+Observed in Chromium on the final export: `scrollWidth` equals the viewport at 320, 390 and 1440px, and
+at 390×844 the h1, lede and the action card's main button (top at 566px) are inside the first screen
+with 58 words of prose. WebKit and native 200% zoom were not tested on this machine.
 
 ## Elevation & Depth
 
@@ -139,23 +142,29 @@ a card. The logo tile is a 64-unit rounded square (`rx=14`) in `web/public/favic
 ## Components
 
 - **Button** (`.button` in `styles.css`, used as `<button>` or `<a>`): 44px min height, 10px radius,
-  500 weight, icon gap 8px. Variants: `--primary` (accent fill, white text; exactly one per section),
+  600 weight, icon gap 8px. Variants: `--primary` (accent fill, white text; exactly one per section),
   `--secondary` (white with strong border), `--ghost` (transparent, secondary text), modifiers `--small`
   (36px) and `--block` (full width). States: hover fills gated by `@media (hover: hover)`; `:active`
   scales to 0.96 only under `prefers-reduced-motion: no-preference`; `:disabled` at 0.6 opacity with
   `not-allowed`; `:focus-visible` 2px accent outline, 2px offset. Busy buttons keep their verb and switch
   the label ("Waiting for wallet…", "Sending…") while disabled.
 - **Link button** (`.link-button`): inline text action (Refresh). Looks like a link, is a `<button>`,
-  with 4px vertical padding and negative margin for a 24px+ hit area.
+  with 4px vertical padding and negative margin for a 24px+ hit area. While a chain read is in flight it
+  is `aria-disabled` (not `disabled`, so focus stays on it after activation; the handler ignores clicks):
+  muted color, no underline, `cursor: progress`, `GrayText` under forced colors, the section carries
+  `aria-busy`, and the status line beside it reads
+  "Reading the chain…" instead of the last update time. That line is plain text, not a live region, so
+  the minute-by-minute refresh is never announced; errors still use `role="alert"`.
 - **Field** (`.field`, in `WalletPanel.tsx` and `BalanceLookup.tsx`): visible `<label for>`, 44px input at
   16px, hint in `.field__hint` (13px muted) and error in `.field__error` (14px red with a dot). Errors set
   `aria-invalid="true"`, are linked with `aria-describedby`, say how to fix, and focus the first invalid
   field on submit. Validation runs on submit; submit stays enabled until a request starts.
 - **Card** (`.card`): white, 16px radius, shadow, 24px padding, 16px vertical gap. `.card__title`
-  (20px/600), `.card__lede`, `.card__footnote`, `.card__header` (title with a trailing small button).
+  (20px/600), `.card__lede`, `.card__header` (title with a trailing small button).
   `.card--action` marks the hero wallet card.
-- **Stat tile** (`Stats.tsx`, `.stat`): `dt` label 14px, `dd` value 20px/650 tabular, optional 13px detail.
-  Loading shows "Loading…", failure shows "Unavailable" plus a section-level error with a Refresh action.
+- **Stat tile** (`Stats.tsx`, `.stat`): `dt` label 14px, `dd` value 20px/700 tabular, optional 13px detail.
+  First load shows "Loading…"; a refresh keeps the last values on screen while the status line says a
+  read is pending; failure shows "Unavailable" plus a section-level error with a Refresh action.
 - **Notice** (`.notice`, `.notice--warning`): icon plus text, sunken or amber. Used for "no wallet"
   and "wrong network" states; the warning carries its own primary button.
 - **Address row** (`AddressRow.tsx`): label, optional note, monospace value in a sunken pill, then a
@@ -163,8 +172,10 @@ a card. The logo tile is a 64-unit rounded square (`rx=14`) in `web/public/favic
   "Select and copy" if the clipboard is unavailable; the accessible name includes what is copied.
 - **Key–value list** (`.kv`): facts with short labels; use `.kv__row--wide` for hashes.
 - **Icons** (`Icons.tsx`): inline SVG, 16px, 1.5px stroke, `currentColor`, `aria-hidden`.
-- **Header / nav** (`App.tsx`): brand link plus three 44px-tall anchor links; a "Skip to content" link is
-  the first focusable element.
+- **Header / nav** (`App.tsx`): brand link (logo tile plus wordmark) and three 44px-tall anchor links with
+  12px side padding. Below 23rem (368px) the wordmark is hidden and the link padding drops to 8px so the
+  row fits a 320px viewport without horizontal scroll; the brand link keeps its `aria-label` and logo
+  tile. A "Skip to content" link is the first focusable element.
 - **Wallet panel** (`WalletPanel.tsx`): disconnected (connect buttons per detected EIP-6963 wallet, or a
   notice when none), connected (account box, Add AMBI to wallet, Swap link, Send form), and
   wrong-network (warning notice with Switch to Ethereum). Status text lives in `role="status"` lines.

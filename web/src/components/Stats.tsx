@@ -6,27 +6,29 @@ export function Stats({ data }: { data: ChainData }) {
   const token = data.token.data;
   const pool = data.pool.data;
   const marketCapImd = pool && token ? pool.imdPerAmbi * Number(token.totalSupply / 10n ** 18n) : null;
+  const reading = data.pool.status === 'loading' || data.token.status === 'loading';
 
   return (
-    <section className="stats" aria-labelledby="stats-heading">
+    <section className="stats" aria-labelledby="stats-heading" aria-busy={reading || undefined}>
       <div className="stats__header">
         <h2 id="stats-heading" className="section-title">
           Live on Ethereum
         </h2>
-        <p className="stats__updated" role="status">
-          {data.updatedAt
-            ? `Updated ${data.updatedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
-            : data.pool.status === 'loading'
-              ? 'Reading the chain…'
-              : ''}
-          {data.pool.status !== 'loading' ? (
-            <>
-              {' · '}
-              <button type="button" className="link-button" onClick={data.refresh}>
-                Refresh
-              </button>
-            </>
-          ) : null}
+        <p className="stats__updated">
+          {reading
+            ? 'Reading the chain…'
+            : data.updatedAt
+              ? `Updated ${data.updatedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+              : 'Not read yet'}
+          {' · '}
+          <button
+            type="button"
+            className="link-button"
+            onClick={reading ? undefined : data.refresh}
+            aria-disabled={reading || undefined}
+          >
+            Refresh
+          </button>
         </p>
       </div>
       <dl className="stat-grid">

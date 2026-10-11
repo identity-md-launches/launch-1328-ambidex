@@ -25,6 +25,10 @@ export function useChainData(): ChainData {
 
   useEffect(() => {
     let cancelled = false;
+    // Every read, first or refresh, is a pending state: keep the last values on screen but say
+    // that a read is in flight, so Refresh can disable itself and the status line can say so.
+    setToken((prev) => ({ status: 'loading', data: prev.data }));
+    setPool((prev) => ({ status: 'loading', data: prev.data }));
     readTokenSummary()
       .then((data) => {
         if (!cancelled) setToken({ status: 'ready', data });

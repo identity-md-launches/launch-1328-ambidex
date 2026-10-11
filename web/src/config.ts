@@ -4,10 +4,23 @@
 
 import type { Address, Hex } from 'viem';
 
-export const SITE = {
-  url: 'https://ambidex.trade',
-  name: 'AMBIDEX',
-} as const;
+// The site claims no origin of its own: the export is published wherever the plane pins it
+// (an IPFS gateway path or an ENS name), so absolute self-links are produced only at build
+// time from VITE_SITE_URL (see vite.config.ts and README, Publish), never hard-coded here.
+
+/**
+ * Absolute http(s) URL of a file in the export root, resolved against the page the visitor
+ * is actually on (an IPFS gateway path, an ENS name or a plain host). Undefined when the page
+ * is not served over http(s), so callers can omit the image rather than hand a wallet a dead link.
+ */
+export function siteAssetUrl(file: string): string | undefined {
+  try {
+    const href = new URL(file, document.baseURI).href;
+    return /^https?:\/\//.test(href) ? href : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export const CHAIN = {
   id: 1,

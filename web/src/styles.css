@@ -254,7 +254,7 @@ input {
   gap: var(--space-2);
   color: var(--color-text-primary);
   text-decoration: none;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: 0.01em;
   min-height: 2.75rem;
 }
@@ -284,7 +284,7 @@ input {
   color: var(--color-text-secondary);
   text-decoration: none;
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   transition-property: color, background-color;
   transition-duration: var(--duration-fast);
   transition-timing-function: var(--ease-out);
@@ -294,6 +294,18 @@ input {
   .nav a:hover {
     color: var(--color-text-primary);
     background: var(--color-bg-hover);
+  }
+}
+
+/* Below 23rem (368px) the wordmark and three links do not fit one row: the brand
+   keeps its logo tile and aria-label, the wordmark hides and the links tighten. */
+@media (max-width: 23rem) {
+  .brand__name {
+    display: none;
+  }
+
+  .nav a {
+    padding-inline: var(--space-2);
   }
 }
 
@@ -367,12 +379,6 @@ input {
   text-wrap: pretty;
 }
 
-.card__footnote {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  text-wrap: pretty;
-}
-
 /* Buttons */
 
 .button {
@@ -385,7 +391,7 @@ input {
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
@@ -471,6 +477,20 @@ input {
   font-size: inherit;
 }
 
+/* aria-disabled rather than disabled: the control stays focusable, so activating Refresh does not
+   drop keyboard focus while the read runs; the handler ignores clicks in that state. */
+.link-button[aria-disabled='true'] {
+  cursor: progress;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+@media (forced-colors: active) {
+  .link-button[aria-disabled='true'] {
+    color: GrayText;
+  }
+}
+
 /* Fields */
 
 .field {
@@ -481,7 +501,7 @@ input {
 
 .field label {
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
@@ -634,7 +654,7 @@ input {
   font-size: var(--text-xl);
   line-height: var(--leading-tight);
   letter-spacing: -0.01em;
-  font-weight: 650;
+  font-weight: 700;
   text-wrap: balance;
 }
 
@@ -662,14 +682,14 @@ input {
 
 .stat__value {
   font-size: var(--text-lg);
-  font-weight: 650;
+  font-weight: 700;
   line-height: var(--leading-snug);
   overflow-wrap: anywhere;
 }
 
 .stat__placeholder {
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .stat__detail {

@@ -1,7 +1,9 @@
 # AMBIDEX (AMBI)
 
 A plain, fixed-supply ERC-20 token for the IdentityMD custom-token launch on Ethereum, and the
-static website for it at https://ambidex.trade/.
+static website for it (source in `web/`, export in `dist/`). The site is published wherever the
+IdentityMD plane pins the committed export; it claims no domain of its own. In particular,
+`https://ambidex.trade/` is not this site: that host serves an unrelated product on another chain.
 
 - [Website](#website): source in `web/`, static export in `dist/`.
 - [Token contract](#token-contract): source in `src/`, tests in `test/`.
@@ -60,33 +62,49 @@ npm run build            # tsc --noEmit, then vite build → ../dist
 
 The site is a static export with relative asset URLs, so it works from any static host, an IPFS gateway
 subpath or an ENS name. Publish the contents of `dist/` as the site root. The IdentityMD plane pins the
-committed `dist/` after the job completes; no publishing command is run from this repository. The
-`og:image`, `og:url` and `canonical` tags point at `https://ambidex.trade/`, so point that domain at the
-published export for shared links to unfurl correctly.
+committed `dist/` after the job completes; no publishing command is run from this repository.
 
-### Checks run on 2026-10-11
+The committed export does not claim an origin: `og:image` and `twitter:image` are the relative `./og.png`
+(resolved by scrapers that accept relative image URLs and ignored by the rest; never a dead link), and
+there is no `canonical` or `og:url` tag. The wallet token icon (`wallet_watchAsset`) is resolved at run
+time against the page the visitor is on, so it loads from whichever host serves the export.
+
+Once the final origin is known (a domain or an ENS gateway URL), rebuild with it so every link scraper
+gets an absolute share image and the page carries `canonical` and `og:url` for that origin:
+
+```
+cd web
+VITE_SITE_URL=https://your-host.example npm run build
+```
+
+The build fails if `VITE_SITE_URL` is not an absolute `http(s)` URL. Commit the rebuilt `dist/` after
+running it.
+
+### Checks run on 2026-10-11 (revision)
 
 | Check | Command | Result |
 | --- | --- | --- |
 | Typecheck | `npm run typecheck` | exit 0, no errors |
 | Unit tests | `npm test` | 5 tests, 5 pass |
 | ABI hash vs. launch record | `npm run check:abi` | match (`94a29d95…`) |
-| Production build | `npm run build` | `dist/index.html` 1.95 kB, CSS 13.1 kB, JS 542 kB (167 kB gzip) |
-| Browser verification | `node test/scratch/verify.mjs` (Playwright, Chromium) | exit 0: no console errors, no failed requests, no overflow at 320–1536, lookup / copy / nav / wallet flows pass |
+| Production build | `npm run build` | `dist/index.html` 1.79 kB, CSS 13.2 kB, JS 542 kB (167 kB gzip) |
+| Origin build | `VITE_SITE_URL=https://example.org/site/ npx vite build --outDir <scratch>` | canonical, og:url and absolute og:image emitted; `ftp://x` rejected |
+| Browser probe | `node test/scratch/probe.mjs --slow` (Playwright 1.64, Chromium) | 320/390/1440: scrollWidth equals viewport, weights 400/600/700, six sizes, 58 words of first-screen prose at 390, no console errors or failed requests; Refresh shows "Reading the chain…" and disables while a delayed RPC read runs |
+| Mock wallet | `node test/scratch/wallet.mjs` (Playwright, Chromium, mock EIP-6963 provider) | connect at 390, `wallet_watchAsset` sent with the image resolved against the served page; that URL returned 200 |
 
-The browser script served `dist/` under a `/preview/` subpath, exercised the wallet flow with a mock
-EIP-6963 provider and saved screenshots to `artifacts/screenshots/`. Full coverage, findings and the
-checks that were not performed (real wallet extension, real transfer, screen reader, native zoom,
+The probe served `dist/` under a `/preview/` subpath. WebKit could not launch on this machine (missing
+system libraries), so Safari rendering is unverified. Full coverage, `file:line` findings, fixes and
+the checks that were not performed (real wallet extension, real transfer, screen reader, native zoom,
 Safari/Firefox) are in `artifacts/validation.md`. Design tokens, typography, components and responsive
 behavior are documented in `DESIGN.md`.
 
 ### Website layout
 
 ```
-web/index.html               page shell, meta tags (title, description, favicon, og:image)
+web/index.html               page shell, meta tags (title, description, favicon, relative og:image)
 web/src/main.tsx             entry
 web/src/App.tsx              page composition: header, hero + wallet panel, stats, lookup, trade, contract, footer
-web/src/config.ts            chain, token, pool and Uniswap addresses from the launch/network records
+web/src/config.ts            chain, token, pool and Uniswap addresses from the launch/network records; run-time asset URL helper
 web/src/abi/AmbidexToken.ts  ABI from the Foundry build of the deployed commit
 web/src/lib/chain.ts         public client, token and pool reads, pool id and price math
 web/src/lib/wallet.ts        EIP-6963 discovery, EIP-1193 types, error wording
@@ -94,6 +112,7 @@ web/src/lib/WalletContext.tsx connect / disconnect / switch-chain state
 web/src/components/          WalletPanel, BalanceLookup, Stats, Trade, Contract, AddressRow, CopyButton, Icons
 web/src/styles.css           tokens and all styles
 web/public/                  favicon.svg, favicon.png, token.png, og.png
+web/vite.config.ts           relative base; VITE_SITE_URL makes share tags absolute at build time
 web/scripts/verify-abi.mjs   ABI hash check
 web/test/                    node --test unit tests
 dist/                        committed production export (relative asset URLs)

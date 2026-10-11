@@ -3,7 +3,7 @@ import { isAddress, parseUnits, type Address, type Hex } from 'viem';
 import { AMBIDEX_ABI, publicClient, readBalance } from '../lib/chain';
 import { describeError, useWalletOptions } from '../lib/wallet';
 import { useWallet } from '../lib/WalletContext';
-import { CHAIN, SITE, SWAP_URL, TOKEN, explorerTx } from '../config';
+import { CHAIN, SWAP_URL, TOKEN, explorerTx, siteAssetUrl } from '../config';
 import { formatTokenAmount, shortenAddress } from '../lib/format';
 import { AlertIcon, ExternalIcon, WalletIcon } from './Icons';
 
@@ -91,9 +91,6 @@ export function WalletPanel() {
         <span>Swap AMBI on Uniswap</span>
         <ExternalIcon />
       </a>
-      <p className="card__footnote">
-        Read-only data comes from public Ethereum RPC. Transactions are signed only in your wallet.
-      </p>
     </section>
   );
 }
@@ -127,6 +124,9 @@ function ConnectedPanel({ account }: { account: Address }) {
     if (!wallet.provider) return;
     setAddState('busy');
     setAddMessage(null);
+    // The icon lives next to index.html; resolve it against the page's own URL so it is
+    // reachable from whatever host serves the export. Omitted when that is not http(s).
+    const image = siteAssetUrl('token.png');
     try {
       const ok = await wallet.provider.request({
         method: 'wallet_watchAsset',
@@ -136,7 +136,7 @@ function ConnectedPanel({ account }: { account: Address }) {
             address: TOKEN.address,
             symbol: TOKEN.symbol,
             decimals: TOKEN.decimals,
-            image: `${SITE.url}/token.png`,
+            ...(image ? { image } : {}),
           },
         },
       });
