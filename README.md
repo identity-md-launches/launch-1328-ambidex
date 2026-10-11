@@ -1,6 +1,109 @@
 # AMBIDEX (AMBI)
 
-A plain, fixed-supply ERC-20 token for the IdentityMD custom-token launch on Ethereum.
+A plain, fixed-supply ERC-20 token for the IdentityMD custom-token launch on Ethereum, and the
+static website for it at https://ambidex.trade/.
+
+- [Website](#website): source in `web/`, static export in `dist/`.
+- [Token contract](#token-contract): source in `src/`, tests in `test/`.
+
+## Website
+
+A single-page site (Vite, React, TypeScript, `viem`) that reads the live token and pool state from public
+Ethereum RPC and offers the token's actions through the visitor's own browser wallet:
+
+- Live supply, pool price in IMD, market cap and pool fee, read from `AmbidexToken` and the Uniswap v4
+  `StateView` for the AMBI/IMD pool. Refreshes every minute or on demand.
+- Balance lookup for any address, no wallet needed.
+- Wallet panel (EIP-6963 / EIP-1193, no wallet SDK): connect, switch to Ethereum mainnet, add AMBI to the
+  wallet (`wallet_watchAsset`), send AMBI (`transfer`), with inline validation and transaction status.
+- A link into the Uniswap app with IMD and AMBI preselected, plus the full pool key and addresses.
+
+Every address the site uses is in `web/src/config.ts` and comes from the launch and network records.
+The ABI in `web/src/abi/AmbidexToken.ts` is the Foundry build output of the deployed source commit; its
+canonical hash (keccak256 of the ABI JSON with sorted keys) is checked against the launch record by
+`npm run check:abi`.
+
+### Install
+
+Node 24 and npm 11 were used. From the repository root:
+
+```
+cd web
+npm ci
+```
+
+### Preview
+
+Serve the committed export locally (any static file server works; the export uses relative URLs):
+
+```
+cd web
+npm run preview          # serves ../dist at http://localhost:4173/
+```
+
+For development with hot reload: `npm run dev`.
+
+### Rebuild
+
+```
+cd web
+npm run check            # typecheck, unit tests, ABI hash check
+npm run build            # tsc --noEmit, then vite build → ../dist
+```
+
+`dist/` is committed; rebuild and commit it after any change in `web/`. If the contract source changes
+(it must not for the live token), regenerate the ABI with `forge build` and copy
+`out/AmbidexToken.sol/AmbidexToken.json`'s `abi` into `web/src/abi/AmbidexToken.ts`, then run
+`node scripts/verify-abi.mjs ../out/AmbidexToken.sol/AmbidexToken.json`.
+
+### Publish
+
+The site is a static export with relative asset URLs, so it works from any static host, an IPFS gateway
+subpath or an ENS name. Publish the contents of `dist/` as the site root. The IdentityMD plane pins the
+committed `dist/` after the job completes; no publishing command is run from this repository. The
+`og:image`, `og:url` and `canonical` tags point at `https://ambidex.trade/`, so point that domain at the
+published export for shared links to unfurl correctly.
+
+### Checks run on 2026-10-11
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Typecheck | `npm run typecheck` | exit 0, no errors |
+| Unit tests | `npm test` | 5 tests, 5 pass |
+| ABI hash vs. launch record | `npm run check:abi` | match (`94a29d95…`) |
+| Production build | `npm run build` | `dist/index.html` 1.95 kB, CSS 13.1 kB, JS 542 kB (167 kB gzip) |
+| Browser verification | `node test/scratch/verify.mjs` (Playwright, Chromium) | exit 0: no console errors, no failed requests, no overflow at 320–1536, lookup / copy / nav / wallet flows pass |
+
+The browser script served `dist/` under a `/preview/` subpath, exercised the wallet flow with a mock
+EIP-6963 provider and saved screenshots to `artifacts/screenshots/`. Full coverage, findings and the
+checks that were not performed (real wallet extension, real transfer, screen reader, native zoom,
+Safari/Firefox) are in `artifacts/validation.md`. Design tokens, typography, components and responsive
+behavior are documented in `DESIGN.md`.
+
+### Website layout
+
+```
+web/index.html               page shell, meta tags (title, description, favicon, og:image)
+web/src/main.tsx             entry
+web/src/App.tsx              page composition: header, hero + wallet panel, stats, lookup, trade, contract, footer
+web/src/config.ts            chain, token, pool and Uniswap addresses from the launch/network records
+web/src/abi/AmbidexToken.ts  ABI from the Foundry build of the deployed commit
+web/src/lib/chain.ts         public client, token and pool reads, pool id and price math
+web/src/lib/wallet.ts        EIP-6963 discovery, EIP-1193 types, error wording
+web/src/lib/WalletContext.tsx connect / disconnect / switch-chain state
+web/src/components/          WalletPanel, BalanceLookup, Stats, Trade, Contract, AddressRow, CopyButton, Icons
+web/src/styles.css           tokens and all styles
+web/public/                  favicon.svg, favicon.png, token.png, og.png
+web/scripts/verify-abi.mjs   ABI hash check
+web/test/                    node --test unit tests
+dist/                        committed production export (relative asset URLs)
+artifacts/validation.md      validation and design-review record
+artifacts/screenshots/       browser evidence from the final export
+DESIGN.md                    implemented design system
+```
+
+## Token contract
+
 
 | Property | Value |
 | --- | --- |
